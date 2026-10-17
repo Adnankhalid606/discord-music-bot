@@ -1,11 +1,12 @@
 import { Events } from 'discord.js';
 import { config } from '../config/config.js';
+import { createErrorEmbed, sendResponse } from '../utils/embeds.js';
 
 export default {
   name: Events.MessageCreate,
   async execute(message) {
     // Ignore bot messages and messages outside guilds
-    if (message.author.bot || !message.guild) return;
+    if (message.author?.bot || !message.guild) return;
 
     const prefix = config.prefix;
 
@@ -28,11 +29,15 @@ export default {
     try {
       await command.execute(message, args);
     } catch (error) {
-      console.error(`Error executing prefix command ${commandName}:`, error);
+      console.error(`[PREFIX ERROR] Error executing command "${commandName}":`, error);
       try {
-        await message.reply('There was an error while executing this command!');
+        const errorEmbed = createErrorEmbed({
+          title: 'Command Execution Error',
+          description: 'An unexpected error occurred while executing this command. Please try again later.',
+        });
+        await sendResponse(message, { embeds: [errorEmbed] });
       } catch (replyError) {
-        console.error('Failed to send error reply:', replyError);
+        console.error('[PREFIX ERROR] Failed to send error reply:', replyError);
       }
     }
   },

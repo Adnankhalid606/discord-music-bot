@@ -1,4 +1,5 @@
 import { Events } from 'discord.js';
+import { createErrorEmbed, sendResponse } from '../utils/embeds.js';
 
 export default {
   name: Events.InteractionCreate,
@@ -8,22 +9,32 @@ export default {
     const command = interaction.client.commands.get(interaction.commandName);
 
     if (!command) {
-      console.error(`No command matching ${interaction.commandName} was found.`);
+      console.error(`[INTERACTION] No command matching /${interaction.commandName} was found.`);
+      const notFoundEmbed = createErrorEmbed({
+        title: 'Command Not Found',
+        description: `The command \`/${interaction.commandName}\` is not recognized.`,
+      });
+      await sendResponse(interaction, { embeds: [notFoundEmbed], ephemeral: true });
       return;
     }
 
     try {
       await command.execute(interaction);
     } catch (error) {
-      console.error(`Error executing ${interaction.commandName}:`, error);
-      const replyPayload = {
-        content: 'There was an error while executing this command!',
-        ephemeral: true,
-      };
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(replyPayload);
-      } else {
-        await interaction.reply(replyPayload);
+      console.error(`[INTERACTION ERROR] Error executing /${interaction.commandName}:`, error);
+
+      const errorEmbed = createErrorEmbed({
+        title: 'Command Execution Error',
+        description: 'An unexpected error occurred while executing this command. Please try again later.',
+      });
+
+      try {
+        await sendResponse(interaction, {
+          embeds: [errorEmbed],
+          ephemeral: true,
+        });
+      } catch (replyError) {
+        console.error('[INTERACTION ERROR] Failed to send error response:', replyError);
       }
     }
   },
