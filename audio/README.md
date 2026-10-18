@@ -20,5 +20,4 @@ The bot supports standard audio containers and codecs decoded via FFmpeg:
 ## Guidelines & Security
 
 - Files must reside directly inside this `audio/` directory. Path traversal (e.g. `../` or subdirectories) is disallowed for security.
-- Audio files in this directory are excluded from git tracking via `.gitignore`.
-- Do not commit or distribute copyrighted music without authorization.
+- Nothing else here 😒😒😒
