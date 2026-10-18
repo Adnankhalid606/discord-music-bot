@@ -1,8 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { PermissionFlagsBits } from 'discord.js';
-import joinCommand from '../src/commands/join.js';
-import leaveCommand from '../src/commands/leave.js';
+import joinCommand from '../src/commands/voice/join.js';
+import leaveCommand from '../src/commands/voice/leave.js';
 import { voiceManager } from '../src/music/VoiceManager.js';
 
 describe('Voice Commands (/join and /leave)', () => {

@@ -2,10 +2,10 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, unlinkSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import playfileCommand from '../src/commands/playfile.js';
-import pauseCommand from '../src/commands/pause.js';
-import resumeCommand from '../src/commands/resume.js';
-import stopCommand from '../src/commands/stop.js';
+import playfileCommand from '../src/commands/music/playfile.js';
+import pauseCommand from '../src/commands/music/pause.js';
+import resumeCommand from '../src/commands/music/resume.js';
+import stopCommand from '../src/commands/music/stop.js';
 import { audioPlayerManager } from '../src/music/AudioPlayerManager.js';
 import { voiceManager } from '../src/music/VoiceManager.js';
 

@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import pingCommand, { calculatePingTimings } from '../src/commands/ping.js';
+import pingCommand, { calculatePingTimings } from '../src/commands/utility/ping.js';
 
 describe('Ping Command', () => {
   test('exports valid slash command data and category', () => {

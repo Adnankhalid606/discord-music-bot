@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import playCommand from '../src/commands/play.js';
+import playCommand from '../src/commands/music/play.js';
 import { trackResolver } from '../src/music/TrackResolver.js';
 import { audioPlayerManager } from '../src/music/AudioPlayerManager.js';
 import { voiceManager } from '../src/music/VoiceManager.js';

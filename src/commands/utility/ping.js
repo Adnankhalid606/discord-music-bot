@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { createPingEmbed } from '../utils/embeds.js';
+import { createPingEmbed } from '../../utils/embeds.js';
 
 /**
  * Calculates diagnostic latency and execution timings for the ping command.

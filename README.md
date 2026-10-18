@@ -110,19 +110,50 @@ npm test
 ```
 *Tests use mocks and do not require active internet or Discord connections.*
 
+## Project Architecture & Directory Structure
+
+```text
+discord-music-bot/
+├── audio/                          # Local audio files storage
+├── src/
+│   ├── commands/                   # Categorized bot commands
+│   │   ├── music/                  # Audio playback commands
+│   │   │   ├── pause.js
+│   │   │   ├── play.js
+│   │   │   ├── playfile.js
+│   │   │   ├── resume.js
+│   │   │   └── stop.js
+│   │   ├── utility/                # Bot utility & diagnostic commands
+│   │   │   ├── help.js
+│   │   │   └── ping.js
+│   │   └── voice/                  # Voice connection lifecycle commands
+│   │       ├── join.js
+│   │       └── leave.js
+│   ├── config/                     # Environment configuration & validation
+│   ├── events/                     # Discord gateway event handlers
+│   ├── handlers/                   # Recursive command discovery & loading
+│   ├── music/                      # Voice connection, track resolver, & audio player managers
+│   ├── scripts/                    # Slash-command deployment script
+│   ├── utils/                      # Reusable embeds & diagnostic command timers
+│   └── index.js                    # Application entry point & client lifecycle
+├── test/                           # Automated test suites
+├── .env.example                    # Environment template
+└── package.json
+```
+
 ## Commands (Dual Slash & Prefix)
 
 Commands follow a consistent modern UI built with Discord's `EmbedBuilder` and can be invoked either as slash commands or with the configured prefix (default: `!`):
 
-### Utility
-- `/ping` or `!ping`: Measures roundtrip latency and WebSocket heartbeat ping, displaying status indicators (🟢 Healthy, 🟡 Moderate, 🔴 Slow).
-- `/help` or `!help`: Displays a command directory dynamically grouped by category (Utility, Voice, Music) with syntax for both slash and prefix invocations.
+### Utility (`src/commands/utility/`)
+- `/ping` or `!ping`: Measures roundtrip latency, Discord gateway WebSocket ping, local execution time, and HTTP REST response time.
+- `/help` or `!help`: Redesigned Command Explorer dynamically grouped by category (Utility, Voice, Music) with dual invocation syntax, argument templates, and usage examples.
 
-### Voice
+### Voice (`src/commands/voice/`)
 - `/join` or `!join`: Connects the bot to the voice channel you are currently in. Validates channel presence and `Connect` permissions, reuses active connections, handles moving channels, and waits for connection readiness.
 - `/leave` or `!leave`: Disconnects the bot from the current voice channel and tears down connection and player tracking cleanly.
 
-### Music (Online & Local Audio Playback)
+### Music (`src/commands/music/`)
 - `/play query:<song title or URL>` or `!play <song title or URL>`: Searches YouTube or resolves a video URL via standalone `yt-dlp` and streams audio directly into your voice channel.
 - `/playfile file:<filename>` or `!playfile <filename>`: Validates and plays a local audio file from the `audio/` directory. Automatically connects to your voice channel if not already connected.
 - `/pause` or `!pause`: Pauses active audio playback.

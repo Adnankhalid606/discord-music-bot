@@ -1,12 +1,12 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
-import { voiceManager } from '../music/VoiceManager.js';
+import { voiceManager } from '../../music/VoiceManager.js';
 import {
   createSuccessEmbed,
   createWarningEmbed,
   createErrorEmbed,
   createInfoEmbed,
   sendResponse,
-} from '../utils/embeds.js';
+} from '../../utils/embeds.js';
 
 export default {
   data: new SlashCommandBuilder()

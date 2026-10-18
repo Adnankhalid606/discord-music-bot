@@ -1,11 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { voiceManager } from '../music/VoiceManager.js';
+import { voiceManager } from '../../music/VoiceManager.js';
 import {
   createSuccessEmbed,
   createInfoEmbed,
   createErrorEmbed,
   sendResponse,
-} from '../utils/embeds.js';
+} from '../../utils/embeds.js';
 
 export default {
   data: new SlashCommandBuilder()

@@ -13,11 +13,30 @@ const __dirname = dirname(__filename);
  */
 export async function getCommandModules(customPath) {
   const commandsPath = customPath || join(__dirname, '..', 'commands');
-  const commandFiles = readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
   const validCommands = [];
 
-  for (const file of commandFiles) {
-    const filePath = join(commandsPath, file);
+  function getJsFilesRecursively(dir) {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    let files = [];
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files = files.concat(getJsFilesRecursively(fullPath));
+      } else if (
+        entry.isFile() &&
+        entry.name.endsWith('.js') &&
+        !entry.name.endsWith('.test.js') &&
+        !entry.name.endsWith('.spec.js')
+      ) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  }
+
+  const commandFiles = getJsFilesRecursively(commandsPath);
+
+  for (const filePath of commandFiles) {
     try {
       const commandModule = await import(pathToFileURL(filePath).href);
       const command = commandModule.default || commandModule;
@@ -25,10 +44,10 @@ export async function getCommandModules(customPath) {
       if (command?.data && typeof command.execute === 'function') {
         validCommands.push(command);
       } else {
-        console.warn(`[WARNING] Command at ${file} is missing required "data" or "execute" property.`);
+        console.warn(`[WARNING] Command at ${filePath} is missing required "data" or "execute" property.`);
       }
     } catch (err) {
-      console.error(`[ERROR] Failed to load command file ${file}:`, err);
+      console.error(`[ERROR] Failed to load command file ${filePath}:`, err);
     }
   }
 

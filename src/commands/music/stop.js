@@ -1,16 +1,16 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { audioPlayerManager } from '../music/AudioPlayerManager.js';
+import { audioPlayerManager } from '../../music/AudioPlayerManager.js';
 import {
   createSuccessEmbed,
   createInfoEmbed,
   createErrorEmbed,
   sendResponse,
-} from '../utils/embeds.js';
+} from '../../utils/embeds.js';
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('resume')
-    .setDescription('Resumes paused audio playback.'),
+    .setName('stop')
+    .setDescription('Stops audio playback and releases resources (keeps voice connection).'),
   category: 'Music',
   async execute(context) {
     const guildId = context.guild?.id;
@@ -24,26 +24,26 @@ export default {
     }
 
     try {
-      const result = audioPlayerManager.resume(guildId);
+      const result = audioPlayerManager.stop(guildId);
 
       if (!result.success) {
         const infoEmbed = createInfoEmbed({
-          title: 'Not Paused',
-          description: 'Audio playback is not currently paused.',
+          title: 'Not Playing',
+          description: 'There is no active or paused audio playback to stop.',
         });
         return await sendResponse(context, { embeds: [infoEmbed] });
       }
 
       const successEmbed = createSuccessEmbed({
-        title: 'Playback Resumed',
-        description: `▶️ Resumed **${result.track || 'audio'}**.`,
+        title: 'Playback Stopped',
+        description: `⏹️ Stopped playback of **${result.track || 'audio'}** and released resources.\nBot remains connected to the voice channel.`,
       });
       return await sendResponse(context, { embeds: [successEmbed] });
     } catch (error) {
-      console.error(`[RESUME ERROR] Guild ${guildId}:`, error?.message || error);
+      console.error(`[STOP ERROR] Guild ${guildId}:`, error?.message || error);
       const errEmbed = createErrorEmbed({
-        title: 'Resume Failed',
-        description: 'An unexpected error occurred while resuming audio playback.',
+        title: 'Stop Failed',
+        description: 'An unexpected error occurred while stopping audio playback.',
       });
       return await sendResponse(context, { embeds: [errEmbed] });
     }

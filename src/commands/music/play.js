@@ -1,14 +1,14 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { voiceManager } from '../music/VoiceManager.js';
-import { audioPlayerManager } from '../music/AudioPlayerManager.js';
-import { trackResolver } from '../music/TrackResolver.js';
-import { config } from '../config/config.js';
+import { voiceManager } from '../../music/VoiceManager.js';
+import { audioPlayerManager } from '../../music/AudioPlayerManager.js';
+import { trackResolver } from '../../music/TrackResolver.js';
+import { config } from '../../config/config.js';
 import {
   createSuccessEmbed,
   createWarningEmbed,
   createErrorEmbed,
   sendResponse,
-} from '../utils/embeds.js';
+} from '../../utils/embeds.js';
 
 export default {
   data: new SlashCommandBuilder()
