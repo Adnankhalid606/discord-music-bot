@@ -1,6 +1,7 @@
 import { Events } from 'discord.js';
 import { config } from '../config/config.js';
 import { createErrorEmbed, sendResponse } from '../utils/embeds.js';
+import { createCommandExecutionTimer } from '../utils/commandTimer.js';
 
 export default {
   name: Events.MessageCreate,
@@ -31,7 +32,13 @@ export default {
 
     // Prevent unhandled exceptions from command execution
     try {
-      await command.execute(message, args);
+      const timer = createCommandExecutionTimer({
+        name: commandName,
+        type: 'prefix',
+        context: message,
+      });
+
+      await timer.executeWithTiming((ctx) => command.execute(ctx, args));
     } catch (error) {
       console.error(`[PREFIX ERROR] Error executing command "${commandName}":`, error);
       try {

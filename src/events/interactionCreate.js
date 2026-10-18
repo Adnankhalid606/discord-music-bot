@@ -1,5 +1,6 @@
 import { Events } from 'discord.js';
 import { createErrorEmbed, sendResponse } from '../utils/embeds.js';
+import { createCommandExecutionTimer } from '../utils/commandTimer.js';
 
 export default {
   name: Events.InteractionCreate,
@@ -23,10 +24,15 @@ export default {
     }
 
     try {
-      await command.execute(interaction);
+      const timer = createCommandExecutionTimer({
+        name: interaction.commandName,
+        type: 'slash',
+        context: interaction,
+      });
+
+      await timer.executeWithTiming((ctx) => command.execute(ctx));
     } catch (error) {
       console.error(`[INTERACTION ERROR] Error executing /${interaction.commandName}:`, error);
-
       const errorEmbed = createErrorEmbed({
         title: 'Command Execution Error',
         description: 'An unexpected error occurred while executing this command. Please try again later.',

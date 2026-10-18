@@ -29,4 +29,7 @@ export const config = Object.freeze({
   guildId: process.env.GUILD_ID.trim(),
   prefix: process.env.PREFIX ? process.env.PREFIX.trim() : '!',
   ytDlpPath: resolveYtDlpPath(process.env.YT_DLP_PATH),
+  commandTimingLogs: process.env.COMMAND_TIMING_LOGS === undefined
+    ? true
+    : process.env.COMMAND_TIMING_LOGS.trim().toLowerCase() !== 'false' && process.env.COMMAND_TIMING_LOGS.trim() !== '0',
 });

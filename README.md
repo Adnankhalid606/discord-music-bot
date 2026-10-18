@@ -63,8 +63,9 @@ If prefix commands work, but slash commands do not appear in the Discord client:
    GUILD_ID=your_development_guild_id_here
    PREFIX=!
    YT_DLP_PATH=yt-dlp
+   COMMAND_TIMING_LOGS=true
    ```
-   *(Note: `PREFIX` defaults to `!` and `YT_DLP_PATH` defaults to `yt-dlp` if omitted)*
+   *(Note: `PREFIX` defaults to `!`, `YT_DLP_PATH` defaults to `yt-dlp`, and `COMMAND_TIMING_LOGS` defaults to `true`)*
 
 > **Security Note:** The `.env` file is excluded from git tracking via `.gitignore`. Never share or commit your bot token.
 
