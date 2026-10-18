@@ -1,7 +1,13 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { Collection } from 'discord.js';
-import { createCommandExecutionTimer, sanitizeLogValue } from '../src/utils/commandTimer.js';
+import {
+  createCommandExecutionTimer,
+  sanitizeLogValue,
+  sanitizeRoute,
+  attachRestDiagnostics,
+} from '../src/utils/commandTimer.js';
+import { VoiceManager } from '../src/music/VoiceManager.js';
 import messageCreateEvent from '../src/events/messageCreate.js';
 import interactionCreateEvent from '../src/events/interactionCreate.js';
 
@@ -245,6 +251,126 @@ describe('Command Execution Timer & Diagnostics', () => {
 
       assert.equal(executed, true);
       assert.equal(replyCalled, true);
+    });
+  });
+
+  describe('REST Request Diagnostics', () => {
+    test('sanitizeRoute masks snowflakes and strips queries', () => {
+      assert.equal(sanitizeRoute('/channels/123456789012345678/messages?limit=50'), '/channels/:id/messages');
+      assert.equal(sanitizeRoute('/interactions/123456789012345678/aBcdEfGh/callback'), '/interactions/:id/aBcdEfGh/callback');
+      assert.equal(sanitizeRoute(null), 'unknown');
+    });
+
+    test('attachRestDiagnostics intercepts client.rest.request and logs duration with command tag', async () => {
+      const logs = [];
+      const logWriter = (msg) => logs.push(msg);
+
+      const mockClient = {
+        rest: {
+          request: async (opts) => {
+            return { ok: true, data: 'mock-response' };
+          },
+        },
+      };
+
+      attachRestDiagnostics(mockClient, { logWriter, enabled: true });
+
+      // Run request outside command context
+      await mockClient.rest.request({
+        method: 'POST',
+        fullRoute: '/channels/123456789012345678/messages',
+      });
+
+      assert.equal(logs.length, 1);
+      assert.ok(logs[0].startsWith('[REST REQ] method=POST route=/channels/:id/messages duration='));
+      assert.ok(logs[0].includes('status=200'));
+
+      // Run request inside command context
+      const timer = createCommandExecutionTimer({
+        name: 'testcmd',
+        type: 'slash',
+        context: { guild: { name: 'Test' } },
+        logWriter: () => {},
+        enabled: true,
+      });
+
+      await timer.executeWithTiming(async () => {
+        await mockClient.rest.request({
+          method: 'GET',
+          fullRoute: '/guilds/987654321098765432/members/123456789012345678',
+        });
+      });
+
+      assert.equal(logs.length, 2);
+      assert.ok(logs[1].includes('cmd=testcmd'));
+      const stats = timer.getStats();
+      assert.equal(stats.restRequests.length, 1);
+      assert.equal(stats.restRequests[0].route, '/guilds/:id/members/:id');
+    });
+
+    test('handles REST request errors and logs error status code', async () => {
+      const logs = [];
+      const logWriter = (msg) => logs.push(msg);
+
+      const mockClient = {
+        rest: {
+          request: async () => {
+            const err = new Error('Not found');
+            err.status = 404;
+            throw err;
+          },
+        },
+      };
+
+      attachRestDiagnostics(mockClient, { logWriter, enabled: true });
+
+      await assert.rejects(
+        () => mockClient.rest.request({
+          method: 'GET',
+          fullRoute: '/users/123456789012345678',
+        }),
+        /Not found/
+      );
+
+      assert.equal(logs.length, 1);
+      assert.ok(logs[0].includes('status=404'));
+      assert.ok(logs[0].includes('route=/users/:id'));
+    });
+  });
+
+  describe('VoiceManager ready wait timing integration', () => {
+    test('measures entersState ready wait and records in active command context', async () => {
+      const voiceManager = new VoiceManager();
+      const mockConn = {
+        state: { status: 'ready' },
+        removeAllListeners: () => {},
+        on: () => {},
+        destroy: () => {},
+      };
+
+      voiceManager._joinVoiceChannel = () => mockConn;
+      voiceManager._entersState = async () => mockConn;
+
+      const timer = createCommandExecutionTimer({
+        name: 'join',
+        type: 'prefix',
+        context: { guild: { name: 'VoiceGuild', id: 'guild-1' } },
+        logWriter: () => {},
+        enabled: true,
+      });
+
+      const mockChannel = {
+        id: 'voice-ch-1',
+        name: 'Music Voice',
+        guild: { id: 'guild-1', voiceAdapterCreator: {} },
+      };
+
+      await timer.executeWithTiming(async () => {
+        await voiceManager.join(mockChannel);
+      });
+
+      const stats = timer.getStats();
+      assert.ok(stats.voiceReadyDuration >= 0);
     });
   });
 });

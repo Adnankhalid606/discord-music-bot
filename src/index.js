@@ -4,6 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { config } from './config/config.js';
 import { loadCommands } from './handlers/commandHandler.js';
+import { attachRestDiagnostics } from './utils/commandTimer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,6 +18,9 @@ async function startBot() {
       GatewayIntentBits.GuildVoiceStates,
     ],
   });
+
+  // Attach diagnostic REST request monitoring
+  attachRestDiagnostics(client);
 
   client.commands = new Collection();
 

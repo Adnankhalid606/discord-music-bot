@@ -4,6 +4,9 @@ import {
   entersState,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
+import { performance } from 'node:perf_hooks';
+import { getActiveCommandContext } from '../utils/commandTimer.js';
+import { config } from '../config/config.js';
 
 /**
  * VoiceManager manages Discord voice channel connections on a per-guild basis.
@@ -80,8 +83,20 @@ export class VoiceManager {
       // Setup state event handlers with automatic cleanup
       this._setupLifecycleHandlers(guildId, connection);
 
-      // Wait for the connection to reach the Ready state
-      await this._entersState(connection, VoiceConnectionStatus.Ready, timeoutMs);
+      // Wait for the connection to reach the Ready state and measure duration
+      const readyWaitStart = performance.now();
+      try {
+        await this._entersState(connection, VoiceConnectionStatus.Ready, timeoutMs);
+      } finally {
+        const readyDuration = performance.now() - readyWaitStart;
+        const activeCommand = getActiveCommandContext();
+        if (activeCommand && typeof activeCommand.recordVoiceReadyDuration === 'function') {
+          activeCommand.recordVoiceReadyDuration(readyDuration);
+        }
+        if (config.commandTimingLogs) {
+          console.log(`[VOICE TIMING] guild=${guildId} channel="${voiceChannel.name}" ready_wait=${readyDuration.toFixed(1)}ms status=${connection.state.status}`);
+        }
+      }
 
       return connection;
     } catch (error) {
