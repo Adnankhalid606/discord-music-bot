@@ -5,6 +5,10 @@ import { createErrorEmbed, sendResponse } from '../utils/embeds.js';
 export default {
   name: Events.MessageCreate,
   async execute(message) {
+    // Record receipt timestamp immediately upon handler entry
+    message.receivedTimestamp = Date.now();
+    message.receivedAt = performance.now();
+
     // Ignore bot messages and messages outside guilds
     if (message.author?.bot || !message.guild) return;
 

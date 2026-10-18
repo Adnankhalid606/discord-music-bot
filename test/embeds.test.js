@@ -8,6 +8,7 @@ import {
   createWarningEmbed,
   createErrorEmbed,
   createPingEmbed,
+  formatLatencyMs,
   sendResponse,
 } from '../src/utils/embeds.js';
 
@@ -69,6 +70,35 @@ describe('Embed Utilities', () => {
     const slowEmbed = createPingEmbed({ roundtrip: 450, wsPing: 320 }).toJSON();
     assert.equal(slowEmbed.color, COLORS.latencySlow);
     assert.ok(slowEmbed.fields.some(f => f.name.includes('Status') && f.value.includes('Slow')));
+  });
+
+  test('formatLatencyMs formats milliseconds correctly across ranges', () => {
+    assert.equal(formatLatencyMs(null), 'Measuring...');
+    assert.equal(formatLatencyMs(undefined, { isPending: true }), 'Measuring...');
+    assert.equal(formatLatencyMs(undefined, { isPending: false }), 'N/A');
+    assert.equal(formatLatencyMs('not-a-number'), 'N/A');
+    assert.equal(formatLatencyMs(0), '0ms');
+    assert.equal(formatLatencyMs(0.4), '0.4ms');
+    assert.equal(formatLatencyMs(1.2), '1ms');
+    assert.equal(formatLatencyMs(254), '254ms');
+  });
+
+  test('createPingEmbed renders all diagnostic timings fields', () => {
+    const embed = createPingEmbed({
+      roundtrip: 688,
+      wsPing: 254,
+      receiveToExec: 0.8,
+      execTime: 1.5,
+      responseTime: 420,
+    }).toJSON();
+
+    assert.equal(embed.fields.length, 6);
+    assert.ok(embed.fields.some(f => f.name === 'WebSocket Ping' && f.value === '254ms'));
+    assert.ok(embed.fields.some(f => f.name === 'Response Send Time' && f.value === '420ms'));
+    assert.ok(embed.fields.some(f => f.name === 'Roundtrip Latency' && f.value === '688ms'));
+    assert.ok(embed.fields.some(f => f.name === 'Receive to Execution' && f.value === '0.8ms'));
+    assert.ok(embed.fields.some(f => f.name === 'Command Execution' && f.value === '2ms'));
+    assert.ok(embed.fields.some(f => f.name === 'Health Status' && f.value.includes('Slow')));
   });
 
   test('sendResponse handles ChatInputCommandInteraction (not deferred/replied)', async () => {

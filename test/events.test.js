@@ -75,4 +75,67 @@ describe('Event Handlers', () => {
     const embedData = sentPayload.embeds[0].toJSON();
     assert.ok(!embedData.description.includes('Sensitive stack trace'));
   });
+
+  test('messageCreate stamps receivedTimestamp and receivedAt on message before execution', async () => {
+    let capturedReceivedAt = null;
+    let capturedReceivedTimestamp = null;
+
+    const mockMessage = {
+      author: { bot: false },
+      guild: { id: '123' },
+      content: '!timed',
+      client: {
+        commands: new Collection([
+          [
+            'timed',
+            {
+              execute: async (msg) => {
+                capturedReceivedAt = msg.receivedAt;
+                capturedReceivedTimestamp = msg.receivedTimestamp;
+              },
+            },
+          ],
+        ]),
+      },
+      reply: async () => {},
+    };
+
+    await messageCreateEvent.execute(mockMessage);
+
+    assert.equal(typeof capturedReceivedAt, 'number');
+    assert.equal(typeof capturedReceivedTimestamp, 'number');
+    assert.ok(capturedReceivedTimestamp > 0);
+  });
+
+  test('interactionCreate stamps receivedTimestamp and receivedAt on interaction before execution', async () => {
+    let capturedReceivedAt = null;
+    let capturedReceivedTimestamp = null;
+
+    const mockInteraction = {
+      isChatInputCommand: () => true,
+      commandName: 'timed',
+      client: {
+        commands: new Collection([
+          [
+            'timed',
+            {
+              execute: async (interaction) => {
+                capturedReceivedAt = interaction.receivedAt;
+                capturedReceivedTimestamp = interaction.receivedTimestamp;
+              },
+            },
+          ],
+        ]),
+      },
+      replied: false,
+      deferred: false,
+      reply: async () => {},
+    };
+
+    await interactionCreateEvent.execute(mockInteraction);
+
+    assert.equal(typeof capturedReceivedAt, 'number');
+    assert.equal(typeof capturedReceivedTimestamp, 'number');
+    assert.ok(capturedReceivedTimestamp > 0);
+  });
 });

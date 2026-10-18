@@ -6,6 +6,10 @@ export default {
   async execute(interaction) {
     if (!interaction.isChatInputCommand()) return;
 
+    // Record receipt timestamp immediately upon handler entry
+    interaction.receivedTimestamp = Date.now();
+    interaction.receivedAt = performance.now();
+
     const command = interaction.client.commands.get(interaction.commandName);
 
     if (!command) {

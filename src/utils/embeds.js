@@ -104,22 +104,45 @@ export function createErrorEmbed({ title = 'Error', description = 'An unexpected
 }
 
 /**
+ * Formats a latency number in milliseconds.
+ *
+ * @param {number|null|undefined} ms
+ * @param {object} [options]
+ * @param {boolean} [options.isPending=false]
+ * @returns {string}
+ */
+export function formatLatencyMs(ms, { isPending = false } = {}) {
+  if (ms === null || (ms === undefined && isPending)) return 'Measuring...';
+  if (ms === undefined) return 'N/A';
+  if (typeof ms !== 'number' || isNaN(ms)) return 'N/A';
+  if (ms < 1 && ms > 0) return `${ms.toFixed(1)}ms`;
+  return `${Math.round(ms)}ms`;
+}
+
+/**
  * Ping / Latency embed.
- * Shows measured roundtrip latency, bot WebSocket heartbeat, and a justified health badge.
+ * Shows measured roundtrip latency, bot WebSocket heartbeat, diagnostic breakdown, and a justified health badge.
  *
  * @param {object} options
  * @param {number|null} options.roundtrip
  * @param {number} options.wsPing
+ * @param {number|null} [options.receiveToExec]
+ * @param {number|null} [options.execTime]
+ * @param {number|null} [options.responseTime]
  * @returns {EmbedBuilder}
  */
-export function createPingEmbed({ roundtrip, wsPing }) {
+export function createPingEmbed({
+  roundtrip,
+  wsPing,
+  receiveToExec,
+  execTime,
+  responseTime,
+}) {
   const isWsCalibrating = wsPing === -1;
   const wsText = isWsCalibrating ? 'Calibrating...' : `${wsPing}ms`;
 
-  let roundtripText = 'Measuring...';
-  if (roundtrip !== null && roundtrip !== undefined) {
-    roundtripText = `${roundtrip}ms`;
-  }
+  const isPending = roundtrip === null || roundtrip === undefined;
+  const roundtripText = isPending ? 'Measuring...' : `${roundtrip}ms`;
 
   // Health assessment:
   // Healthy: wsPing < 150 && roundtrip < 250
@@ -136,14 +159,19 @@ export function createPingEmbed({ roundtrip, wsPing }) {
     embedColor = COLORS.latencyModerate;
   }
 
+  const fields = [
+    { name: 'WebSocket Ping', value: wsText, inline: true },
+    { name: 'Response Send Time', value: formatLatencyMs(responseTime, { isPending }), inline: true },
+    { name: 'Roundtrip Latency', value: roundtripText, inline: true },
+    { name: 'Receive to Execution', value: formatLatencyMs(receiveToExec, { isPending }), inline: true },
+    { name: 'Command Execution', value: formatLatencyMs(execTime, { isPending }), inline: true },
+    { name: 'Health Status', value: statusBadge, inline: true },
+  ];
+
   return createBaseEmbed({
     title: '🏓 Pong!',
     color: embedColor,
-    fields: [
-      { name: 'WebSocket Ping', value: wsText, inline: true },
-      { name: 'Roundtrip Latency', value: roundtripText, inline: true },
-      { name: 'Health Status', value: statusBadge, inline: true },
-    ],
+    fields,
     footer: 'Discord Music Bot • Performance Monitor',
     timestamp: true,
   });
