@@ -111,7 +111,16 @@ describe('Play Command (/play and !play)', () => {
     trackResolver.resolve = async () => fakeTrack;
     voiceManager.getChannelId = () => null;
     voiceManager.join = async () => ({ id: 'conn-1' });
-    audioPlayerManager.playTrack = () => ({ track: fakeTrack.title });
+    audioPlayerManager.playTrack = (guildId, connection, track) => {
+      const entry = audioPlayerManager.getOrCreatePlayer(guildId, connection);
+      entry.currentTrack = track.title;
+      if (entry?.player) {
+        const oldState = { ...entry.player.state };
+        entry.player.state = { status: 'playing' };
+        entry.player.emit('stateChange', oldState, { status: 'playing' });
+      }
+      return { track: track.title };
+    };
 
     try {
       const mockInteraction = {
@@ -159,7 +168,16 @@ describe('Play Command (/play and !play)', () => {
     trackResolver.resolve = async () => fakeTrack;
     voiceManager.getChannelId = () => null;
     voiceManager.join = async () => ({ id: 'conn-1' });
-    audioPlayerManager.playTrack = () => ({ track: fakeTrack.title });
+    audioPlayerManager.playTrack = (guildId, connection, track) => {
+      const entry = audioPlayerManager.getOrCreatePlayer(guildId, connection);
+      entry.currentTrack = track.title;
+      if (entry?.player) {
+        const oldState = { ...entry.player.state };
+        entry.player.state = { status: 'playing' };
+        entry.player.emit('stateChange', oldState, { status: 'playing' });
+      }
+      return { track: track.title };
+    };
 
     try {
       const mockMessage = {

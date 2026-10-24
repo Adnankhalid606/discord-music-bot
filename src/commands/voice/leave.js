@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { voiceManager } from '../../music/VoiceManager.js';
+import { playbackLifecycleService } from '../../music/PlaybackLifecycleService.js';
 import {
   createSuccessEmbed,
   createInfoEmbed,
@@ -24,6 +25,10 @@ export default {
     }
 
     try {
+      // 1. Cancel any active or pending playback operations for this guild immediately
+      playbackLifecycleService.cancelActiveOperation(guildId, 'Left voice channel via leave command');
+
+      // 2. Disconnect and tear down connection
       const left = voiceManager.leave(guildId);
 
       if (!left) {

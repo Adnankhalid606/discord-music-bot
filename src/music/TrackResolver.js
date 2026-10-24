@@ -55,6 +55,9 @@ export class TrackResolver {
    * Resolves a song name or video URL to playable metadata.
    *
    * @param {string} query - Track title or URL
+   * @param {object} [options]
+   * @param {AbortSignal} [options.signal] - Optional AbortSignal for early cancellation
+   * @param {Function} [options.onProcessSpawn] - Optional callback receiving the spawned ChildProcess
    * @returns {Promise<{
    *   title: string,
    *   streamUrl: string,
@@ -66,9 +69,16 @@ export class TrackResolver {
    *   query: string
    * }>}
    */
-  async resolve(query) {
+  async resolve(query, { signal, onProcessSpawn } = {}) {
     if (!query || typeof query !== 'string' || !query.trim()) {
       throw new Error('Please provide a valid song name or URL.');
+    }
+
+    if (signal?.aborted) {
+      const abortErr = new Error('Track resolution was aborted.');
+      abortErr.name = 'AbortError';
+      abortErr.code = 'ABORT_ERR';
+      throw abortErr;
     }
 
     const trimmed = query.trim();
@@ -98,6 +108,12 @@ export class TrackResolver {
           clearTimeout(timeoutId);
           timeoutId = null;
         }
+        if (signal && abortHandler) {
+          try {
+            signal.removeEventListener('abort', abortHandler);
+          } catch {}
+          abortHandler = null;
+        }
         if (child) {
           child.stdout?.removeAllListeners();
           child.stderr?.removeAllListeners();
@@ -120,11 +136,29 @@ export class TrackResolver {
       };
 
       let child;
+      let abortHandler = null;
+
       try {
         child = this._spawn(this.executablePath, args, {
           stdio: ['ignore', 'pipe', 'pipe'],
           windowsHide: true,
         });
+
+        if (typeof onProcessSpawn === 'function') {
+          try {
+            onProcessSpawn(child);
+          } catch {}
+        }
+
+        if (signal) {
+          abortHandler = () => {
+            try {
+              child.kill('SIGTERM');
+            } catch {}
+            safeReject(new Error('Track resolution was aborted.'), child);
+          };
+          signal.addEventListener('abort', abortHandler, { once: true });
+        }
       } catch (spawnErr) {
         if (spawnErr.code === 'ENOENT') {
           return safeReject(

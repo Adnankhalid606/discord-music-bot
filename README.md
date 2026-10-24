@@ -160,6 +160,63 @@ Commands follow a consistent modern UI built with Discord's `EmbedBuilder` and c
 - `/resume` or `!resume`: Resumes paused audio playback.
 - `/stop` or `!stop`: Stops audio playback and releases resources while keeping the bot connected in voice.
 
+## Playback Lifecycle & Cancellation-Safe Architecture
+
+Online track playback is orchestrated by `PlaybackLifecycleService`, which enforces an explicit state machine and cancellation guarantees per guild:
+
+### Lifecycle Stages
+```text
+idle ──► resolving ──► connecting ──► preparing ──► playing ──► completed
+             │              │             │            │
+             └──────────────┴─────────────┴────────────┴──► cancelled / failed
+```
+
+- **`resolving`**: Spawns `yt-dlp` to search and extract audio metadata and direct stream URLs.
+- **`connecting`**: Connects to the user's voice channel and ensures `VoiceConnectionStatus.Ready`.
+- **`preparing`**: Subscribes the audio player and creates the audio stream resource.
+- **`playing`**: Starts playback verified by `AudioPlayerStatus.Playing` before sending a success embed.
+- **`cancelled` / `failed` / `completed`**: Terminal states. Resources and operations are cleaned up.
+
+### Cancellation Behavior
+- When `!leave` or `/leave` is executed, any active or pending play operation for that guild is aborted immediately.
+- Owned `yt-dlp` subprocesses are terminated via `SIGTERM`.
+- Asynchronous gates (after resolver, after voice readiness, and before response) verify operation status; stale results are rejected and cannot reconnect the bot or start playback.
+- If a newer `/play` or `!play` command is received while an earlier operation is resolving, the previous operation is superceded and cancelled safely.
+- Cancelled operations never send late or duplicate Discord messages.
+
+### Playback Stage Timing Logs
+
+When `COMMAND_TIMING_LOGS=true` (the default in `.env`), each playback operation logs precise monotonic timings for individual stages using operation identity:
+
+```text
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=command_dispatch duration_ms=1.2 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=resolver_startup duration_ms=4.8 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=resolver_search duration_ms=642.1 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=voice_readiness duration_ms=315.4 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=player_init duration_ms=0.5 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=resource_creation duration_ms=210.3 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=playback_start duration_ms=2.7 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=response_delivery duration_ms=180.2 status=success
+[PLAY TIMING] op=play-1792312173730-1 guild=1530915379172610048 stage=total_operation duration_ms=1357.2 status=success
+```
+
+To disable diagnostic timing logs, set in `.env`:
+```env
+COMMAND_TIMING_LOGS=false
+```
+
+### Running Lifecycle & Race Condition Tests
+
+Run the full automated test suite or the dedicated playback lifecycle race condition tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run playback lifecycle & cancellation tests specifically
+node test/playbackLifecycle.test.js
+```
+
 ## Troubleshooting
 
 - **`yt-dlp executable was not found`**:

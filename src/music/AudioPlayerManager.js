@@ -111,7 +111,7 @@ export class AudioPlayerManager {
         if (entry.subscription) {
           entry.subscription.unsubscribe();
         }
-        entry.subscription = connection.subscribe(entry.player);
+        entry.subscription = typeof connection.subscribe === 'function' ? connection.subscribe(entry.player) : null;
         entry.connection = connection;
       }
       return entry;
@@ -119,7 +119,7 @@ export class AudioPlayerManager {
 
     const player = this._createAudioPlayer();
     let subscription = null;
-    if (connection) {
+    if (connection && typeof connection.subscribe === 'function') {
       subscription = connection.subscribe(player);
     }
 
@@ -308,6 +308,7 @@ export const audioPlayerManager = new AudioPlayerManager();
 
 // Automatically clean up guild audio player when voice connection is destroyed
 import { voiceManager } from './VoiceManager.js';
+
 voiceManager.onCleanup((guildId) => {
   audioPlayerManager.cleanup(guildId);
 });
